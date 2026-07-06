@@ -70,7 +70,7 @@ export default function Contact() {
                 </div>
                 <div className={cls('msg')}><textarea id="f-msg" className={has('msg').trim()} value={f.msg} onChange={set('msg')} /><label htmlFor="f-msg">Tell us about the project</label><div className="err">A sentence or two helps</div></div>
                 <button type="submit" className="btn btn-primary">Send enquiry <span className="arr">→</span></button>
-                <div className="form-note">This preview form validates locally. Connect it to your inbox or CRM to go live.</div>
+                <div className="form-note"></div>
               </form>
             ) : (
               <div className="form-done show">
