@@ -1,6 +1,27 @@
-import { SERVICES, AI_CHIPS } from '../data'
+import { useEffect, useState } from 'react'
+import { SERVICES as DEFAULT_SERVICES, AI_CHIPS as DEFAULT_CHIPS } from '../data'
+import { api } from '../api'
+
+// Normalise the bundled defaults into the shape the API returns, so the
+// component renders identically whether data comes from the DB or the fallback.
+const defaultServices = DEFAULT_SERVICES.map((s) => ({ title: s.t, description: s.d, sub: s.sub, icon: s.icon }))
+const defaultChips = [...DEFAULT_CHIPS.map((label) => ({ label, hot: false })), { label: 'Custom AI automation', hot: true }]
 
 export default function Services() {
+  const [services, setServices] = useState(defaultServices)
+  const [chips, setChips] = useState(defaultChips)
+
+  useEffect(() => {
+    let alive = true
+    api.getServices().then((rows) => {
+      if (alive && Array.isArray(rows) && rows.length) setServices(rows)
+    }).catch(() => { /* keep defaults if API/DB unavailable */ })
+    api.getAiChips().then((rows) => {
+      if (alive && Array.isArray(rows) && rows.length) setChips(rows)
+    }).catch(() => {})
+    return () => { alive = false }
+  }, [])
+
   return (
     <section className="section" id="services">
       <div className="wrap">
@@ -16,8 +37,11 @@ export default function Services() {
             <h3>AI automation</h3>
             <p>Put the repetitive work on autopilot. We build AI agents and workflows for almost anything — sales, support, bookings, follow-ups, data and reporting — and if your process is unique, we build fully custom AI automation around it.</p>
             <div className="chips">
-              {AI_CHIPS.map((c) => <span key={c}>{c}</span>)}
-              <span className="hot">Custom AI automation</span>
+              {chips.map((c) => (
+                c.hot
+                  ? <span className="hot" key={c.id ?? c.label}>{c.label}</span>
+                  : <span key={c.id ?? c.label}>{c.label}</span>
+              ))}
             </div>
           </div>
           <div className="right">
@@ -28,15 +52,15 @@ export default function Services() {
         </div>
 
         <div className="svc-grid">
-          {SERVICES.map((s, i) => (
-            <div className="svc" key={s.t} data-rise style={{ transitionDelay: `${(i % 3) * 0.05}s` }}>
+          {services.map((s, i) => (
+            <div className="svc" key={s.id ?? s.title} data-rise style={{ transitionDelay: `${(i % 3) * 0.05}s` }}>
               <div className="ico">
                 <svg viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round"
-                  dangerouslySetInnerHTML={{ __html: s.icon }} />
+                  dangerouslySetInnerHTML={{ __html: s.icon || '' }} />
               </div>
-              <h4>{s.t}</h4>
-              <p>{s.d}</p>
-              <div className="sub">{s.sub.map((x) => <span key={x}>{x}</span>)}</div>
+              <h4>{s.title}</h4>
+              <p>{s.description}</p>
+              <div className="sub">{(s.sub || []).map((x) => <span key={x}>{x}</span>)}</div>
             </div>
           ))}
         </div>

@@ -1,14 +1,40 @@
-import { useState } from 'react'
-import { PROJECTS, AI_PROJECTS, CATLABEL } from '../data'
+import { useEffect, useState } from 'react'
+import { PROJECTS as DEFAULT_PROJECTS, AI_PROJECTS as DEFAULT_AI, CATLABEL } from '../data'
+import { api } from '../api'
 
 const FILTERS = [
   ['all', 'All'], ['ai', 'AI automation'], ['web', 'Web'], ['brand', 'Branding'], ['mktg', 'Marketing'],
 ]
 
+// Bundled fallbacks, normalised to the API shape.
+const defaultProjects = DEFAULT_PROJECTS.map((p) => ({ title: p.t, image: p.img, url: p.url, categories: p.cats }))
+const defaultAi = DEFAULT_AI
+
+// image can be a full URL, an absolute path, or a bare asset name ("tycoon").
+const imgSrc = (image) => {
+  if (!image) return ''
+  if (/^https?:\/\//i.test(image) || image.startsWith('/')) return image
+  return `/assets/${image}.webp`
+}
+
 export default function Work() {
   const [cat, setCat] = useState('all')
+  const [projects, setProjects] = useState(defaultProjects)
+  const [aiProjects, setAiProjects] = useState(defaultAi)
+
+  useEffect(() => {
+    let alive = true
+    api.getProjects().then((rows) => {
+      if (alive && Array.isArray(rows) && rows.length) setProjects(rows)
+    }).catch(() => {})
+    api.getAiProjects().then((rows) => {
+      if (alive && Array.isArray(rows) && rows.length) setAiProjects(rows)
+    }).catch(() => {})
+    return () => { alive = false }
+  }, [])
+
   const showAI = cat === 'all' || cat === 'ai'
-  const projects = PROJECTS.filter((p) => cat === 'all' || p.cats.includes(cat))
+  const shown = projects.filter((p) => cat === 'all' || (p.categories || []).includes(cat))
 
   return (
     <section className="section" id="work">
@@ -24,17 +50,19 @@ export default function Work() {
           ))}
         </div>
 
-        {showAI && (
+        {showAI && aiProjects.length > 0 && (
           <div data-rise>
             <div className="ai-cards">
-              {AI_PROJECTS.map((a) => (
-                <article className="ai-card" key={a.title}>
+              {aiProjects.map((a) => (
+                <article className="ai-card" key={a.id ?? a.title}>
                   <span className="tag">{a.tag}</span>
                   <h4>{a.title}</h4>
-                  <div className="ai-feats">{a.features.map((f) => <span key={f}>{f}</span>)}</div>
-                  <a className="btn btn-primary" href={a.demo} target="_blank" rel="noopener noreferrer">
-                    Request a demo <span className="arr">→</span>
-                  </a>
+                  <div className="ai-feats">{(a.features || []).map((f) => <span key={f}>{f}</span>)}</div>
+                  {a.demo && (
+                    <a className="btn btn-primary" href={a.demo} target="_blank" rel="noopener noreferrer">
+                      Request a demo <span className="arr">→</span>
+                    </a>
+                  )}
                 </article>
               ))}
             </div>
@@ -42,12 +70,12 @@ export default function Work() {
         )}
 
         <div className="work-grid">
-          {projects.map((p) => (
-            <article className="pcard" key={p.t}>
-              <div className="pv"><img loading="lazy" src={`/assets/${p.img}.webp`} alt={p.t} /></div>
+          {shown.map((p) => (
+            <article className="pcard" key={p.id ?? p.title}>
+              <div className="pv"><img loading="lazy" src={imgSrc(p.image)} alt={p.title} /></div>
               <div className="body">
-                <div className="tag">{p.cats.map((c) => CATLABEL[c]).join(' · ')}</div>
-                <h4>{p.t}</h4>
+                <div className="tag">{(p.categories || []).map((c) => CATLABEL[c] || c).join(' · ')}</div>
+                <h4>{p.title}</h4>
                 <div className="links">
                   {p.url
                     ? <a className="tlink" href={p.url} target="_blank" rel="noopener noreferrer">Visit site →</a>

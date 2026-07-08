@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { CONTACT } from '../data'
+import { api } from '../api'
 
 const SERVICES = ['AI automation', 'Web development', 'Branding & design', 'Social media marketing', 'SEO', 'Video editing', 'Web hosting', 'Not sure yet']
 const SIZES = ['Just exploring', 'Small project', 'Medium project', 'Large project', 'Ongoing / retainer']
@@ -9,10 +10,13 @@ export default function Contact() {
   const [f, setF] = useState({ name: '', email: '', phone: '', service: '', budget: '', msg: '' })
   const [bad, setBad] = useState({})
   const [done, setDone] = useState(false)
+  const [sending, setSending] = useState(false)
+  const [error, setError] = useState('')
   const set = (k) => (e) => { setF({ ...f, [k]: e.target.value }); setBad((b) => ({ ...b, [k]: false })) }
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault()
+    setError('')
     const errs = {
       name: !f.name.trim(),
       email: !f.email.trim() || !emailOk(f.email.trim()),
@@ -22,7 +26,24 @@ export default function Contact() {
     }
     setBad(errs)
     if (Object.values(errs).some(Boolean)) return
-    setDone(true)
+
+    setSending(true)
+    try {
+      await api.submitContact({
+        name: f.name.trim(),
+        email: f.email.trim(),
+        phone: f.phone.trim(),
+        service: f.service,
+        budget: f.budget,
+        msg: f.msg.trim(),
+      })
+      setDone(true)
+    } catch (err) {
+      if (err.data?.errors) setBad((b) => ({ ...b, ...err.data.errors }))
+      setError(err.message || 'Something went wrong. Please try again or email us directly.')
+    } finally {
+      setSending(false)
+    }
   }
 
   const cls = (k) => `field${bad[k] ? ' bad' : ''}`
@@ -69,8 +90,10 @@ export default function Contact() {
                   <label htmlFor="f-budget">Project size</label><div className="err">Pick an option</div>
                 </div>
                 <div className={cls('msg')}><textarea id="f-msg" className={has('msg').trim()} value={f.msg} onChange={set('msg')} /><label htmlFor="f-msg">Tell us about the project</label><div className="err">A sentence or two helps</div></div>
-                <button type="submit" className="btn btn-primary">Send enquiry <span className="arr">→</span></button>
-                <div className="form-note"></div>
+                <button type="submit" className="btn btn-primary" disabled={sending}>
+                  {sending ? 'Sending…' : <>Send enquiry <span className="arr">→</span></>}
+                </button>
+                {error && <div className="form-error">{error}</div>}
               </form>
             ) : (
               <div className="form-done show">
