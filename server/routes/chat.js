@@ -74,7 +74,7 @@ router.post('/', wrap(async (req, res) => {
   const body = {
     contents: trimmed,
     systemInstruction: { parts: [{ text: SYSTEM }] },
-    generationConfig: { maxOutputTokens: 400, temperature: 0.6 },
+    generationConfig: { maxOutputTokens: 600, temperature: 0.75, topP: 0.9 },
   }
 
   const upstream = await fetch(ENDPOINT, {
@@ -100,12 +100,14 @@ router.post('/', wrap(async (req, res) => {
     throw err
   }
 
-  // Save the full conversation (fire-and-forget — doesn't delay the reply).
+  // Save the full conversation. Awaited on purpose: on serverless hosting
+  // (Vercel), the function can freeze the instant a response is sent, which
+  // would kill an un-awaited save before it reaches the database.
   const fullConvo = [
     ...messages.map((m) => ({ role: m.role, content: str(m.content), at: m.at || new Date().toISOString() })),
     { role: 'assistant', content: reply, at: new Date().toISOString() },
   ]
-  saveConversation(sessionId, fullConvo)
+  await saveConversation(sessionId, fullConvo)
 
   res.json({ reply, sessionId })
 }))
