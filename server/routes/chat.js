@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { wrap, str, asInt } from '../helpers.js'
 import { sql } from '../db.js'
 import { requireAdmin } from '../auth.js'
-import { SYSTEM } from '../../src/data.js'
+import { SYSTEM } from '../chatSystem.js'
 
 const router = Router()
 
