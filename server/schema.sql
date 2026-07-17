@@ -66,3 +66,14 @@ CREATE TABLE IF NOT EXISTS ai_projects (
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Inphox chatbot conversations --------------------------------
+CREATE TABLE IF NOT EXISTS chat_conversations (
+  id             SERIAL PRIMARY KEY,
+  session_id     TEXT        NOT NULL UNIQUE,         -- one row per visitor session
+  messages       JSONB       NOT NULL DEFAULT '[]',   -- [{role:'user'|'assistant', content, at}]
+  message_count  INT         NOT NULL DEFAULT 0,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_chat_updated ON chat_conversations (updated_at DESC);

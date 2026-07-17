@@ -1,21 +1,22 @@
 import { useEffect, useRef, useState } from 'react'
-import { SYSTEM, fallback } from '../data'
+import { fallback } from '../data'
+import { api } from '../api'
 
 const AV = { backgroundImage: "url('/assets/fox-avatar.webp')" }
 const QUICKS = ['What does Inphint do?', 'Tell me about AI automation', 'How do I get started?']
 const GREETING = "Hi, I'm Inphox — Inphint's AI assistant. Ask me about AI automation, websites, branding, marketing or how to get started."
+const SESSION_KEY = 'inphint_chat_session'
 
-async function callAPI(history) {
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1000, system: SYSTEM, messages: history.slice(-12) }),
-  })
-  if (!res.ok) throw new Error('HTTP ' + res.status)
-  const data = await res.json()
-  const text = (data.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('\n').trim()
-  if (!text) throw new Error('empty')
-  return text
+// One id per visitor per browser, so their whole conversation (across
+// messages, and across visits until they clear storage) groups together
+// under a single row in the admin "Conversations" tab.
+function getSessionId() {
+  let id = localStorage.getItem(SESSION_KEY)
+  if (!id) {
+    id = (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`)
+    localStorage.setItem(SESSION_KEY, id)
+  }
+  return id
 }
 
 export default function Chatbot() {
@@ -24,7 +25,8 @@ export default function Chatbot() {
   const [typing, setTyping] = useState(false)
   const [text, setText] = useState('')
   const busy = useRef(false)
-  const history = useRef([])                 // API history {role, content}
+  const history = useRef([])                 // API history {role:'user'|'assistant', content}
+  const sessionId = useRef(getSessionId())
   const bodyRef = useRef(null)
   const greeted = useRef(false)
 
@@ -46,8 +48,16 @@ export default function Chatbot() {
     history.current.push({ role: 'user', content: q })
     setTyping(true)
     let reply
-    try { reply = await callAPI(history.current) }
-    catch { await new Promise((r) => setTimeout(r, 500)); reply = fallback(q) }
+    try {
+      const { reply: r, sessionId: sid } = await api.sendChat(history.current, sessionId.current)
+      reply = r
+      if (sid) sessionId.current = sid
+    } catch {
+      // Backend/Gemini unavailable — fall back to the built-in keyword replies
+      // so the widget still feels responsive instead of erroring out.
+      await new Promise((r) => setTimeout(r, 400))
+      reply = fallback(q)
+    }
     setTyping(false)
     setMsgs((m) => [...m, { role: 'bot', text: reply }])
     history.current.push({ role: 'assistant', content: reply })

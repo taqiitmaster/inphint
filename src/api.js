@@ -37,6 +37,7 @@ export const api = {
   getProjects: () => req('GET', '/projects'),
   getAiProjects: () => req('GET', '/ai-projects'),
   submitContact: (payload) => req('POST', '/contact', payload),
+  sendChat: (messages, sessionId) => req('POST', '/chat', { messages, sessionId }),
 
   // ── Auth ──
   login: (username, password) => req('POST', '/auth/login', { username, password }),
@@ -64,4 +65,9 @@ export const adminApi = {
   aiChips: adminResource('/ai-chips'),
   projects: adminResource('/projects'),
   aiProjects: adminResource('/ai-projects'),
+  conversations: {
+    list: () => req('GET', '/chat/admin', undefined, true),
+    get: (id) => req('GET', `/chat/admin/${id}`, undefined, true),
+    remove: (id) => req('DELETE', `/chat/admin/${id}`, undefined, true),
+  },
 }

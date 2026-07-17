@@ -33,6 +33,9 @@ Then edit `.env`:
 - **`JWT_SECRET`** — any long random string (signs admin login tokens).
 - **SMTP_* / NOTIFY_TO** *(optional)* — set these to also get an email on every new enquiry.
   If left blank, enquiries are still saved to the database.
+- **`GEMINI_API_KEY`** *(optional but recommended)* — powers the real-time Inphox chatbot.
+  Get a free key at https://aistudio.google.com/apikey. Without it, Inphox still replies using
+  its built-in keyword fallback, so the widget never breaks — it's just less conversational.
 
 ## 4. Create tables + seed initial content
 
@@ -89,6 +92,7 @@ Public:
 | Method | Path | Purpose |
 |--------|------|---------|
 | POST | `/api/contact` | Submit the contact form |
+| POST | `/api/chat` | Send a message to Inphox (Gemini-powered) |
 | GET | `/api/services` | Active services |
 | GET | `/api/ai-chips` | Active AI chips |
 | GET | `/api/projects` | Active projects |
@@ -150,8 +154,13 @@ Any Node host works (Render, Railway, Fly, a VPS, etc.):
 3. Start command: `npm start`
 4. Run `npm run db:setup` once (and `npm run db:seed` if you want the starter content).
 
-## Chatbot
+## Inphox chatbot
 
-`Chatbot.jsx` still calls the Anthropic API directly for the Inphox assistant, with the built-in
-keyword `fallback()` when that call isn’t available. To take it live on your own hosting, add a small
-serverless function that holds your API key and point `callAPI()` at it — never put the key in the frontend.
+`Chatbot.jsx` sends messages to `POST /api/chat`, which the server forwards to the Gemini API
+(`server/routes/chat.js`) using `GEMINI_API_KEY` from your environment — the key never reaches the
+browser. If the key isn't set, or Gemini is briefly unavailable, the widget automatically falls
+back to the built-in keyword replies in `src/data.js`, so it's never broken for a visitor. The
+route also rate-limits each visitor (15 messages/minute) to protect your API key from abuse.
+
+To change the model, set `GEMINI_MODEL` in `.env` (defaults to `gemini-2.0-flash`).
+To change what Inphox knows/says, edit the `SYSTEM` prompt in `src/data.js`.

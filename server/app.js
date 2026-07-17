@@ -13,6 +13,7 @@ import servicesRouter from './routes/services.js'
 import projectsRouter from './routes/projects.js'
 import aiProjectsRouter from './routes/aiProjects.js'
 import aiChipsRouter from './routes/aiChips.js'
+import chatRouter from './routes/chat.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(__dirname, '..')
@@ -33,6 +34,7 @@ app.use('/api/services', servicesRouter)
 app.use('/api/projects', projectsRouter)
 app.use('/api/ai-projects', aiProjectsRouter)
 app.use('/api/ai-chips', aiChipsRouter)
+app.use('/api/chat', chatRouter)
 
 // Unknown API route -> JSON 404 (so the SPA fallback never swallows it)
 app.use('/api', (req, res) => res.status(404).json({ error: 'Not found' }))

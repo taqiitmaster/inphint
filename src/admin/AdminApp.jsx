@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { api, getToken, clearToken } from '../api'
 import Login from './Login'
 import Contacts from './Contacts'
+import Conversations from './Conversations'
 import ServicesAdmin from './ServicesAdmin'
 import ChipsAdmin from './ChipsAdmin'
 import ProjectsAdmin from './ProjectsAdmin'
@@ -10,6 +11,7 @@ import './admin.css'
 
 const TABS = [
   ['enquiries', 'Enquiries', Contacts],
+  ['conversations', 'Conversations', Conversations],
   ['services', 'Services', ServicesAdmin],
   ['chips', 'AI chips', ChipsAdmin],
   ['projects', 'Projects', ProjectsAdmin],
