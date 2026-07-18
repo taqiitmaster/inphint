@@ -8,7 +8,7 @@ import { SYSTEM } from '../chatSystem.js'
 const router = Router()
 
 const GEMINI_KEY = process.env.GEMINI_API_KEY
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash'
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-flash-latest'
 const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`
 
 if (!GEMINI_KEY) {
